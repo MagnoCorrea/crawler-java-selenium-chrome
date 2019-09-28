@@ -26,14 +26,15 @@ public class Main {
 
 		driver.get("https://imobiliariaprates.com.br/aluguel/tipo/cidadebairro/");
 		whait();
+		whait();
+
 		closeModalPopUp(driver);
 		whait();
 		readElements(driver);
 		
-		goToNextPage(driver);
-		whait();
-		readElements(driver);
-		
+		/*
+		 * goToNextPage(driver); whait(); readElements(driver);
+		 */		
 		driver.quit();
 	}
 
@@ -55,7 +56,7 @@ public class Main {
 	
 	private static void whait() {
 		try {
-			Thread.sleep(1000);
+			Thread.sleep(2000);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -68,11 +69,32 @@ public class Main {
 		
 	}
 
+	private static void readElementsPage(WebDriver driver) {
+		String in = driver.getPageSource();
+		System.out.println(in);
+	}
 	private static void readElements(WebDriver driver) {
-		List<WebElement> elements = driver.findElements(By.xpath("//div[@class='col-xs-12 grid-imovel']/div/a"));
+//		List<WebElement> elements = driver.findElements(By.xpath("//div[@class='col-xs-12 grid-imovel']/div/a"));
+		List<WebElement> elements = driver.findElements(By.xpath("//div[@class='limited-block-info']"));
+
 		for (WebElement element : elements) {
-			String url = element.getAttribute("href");
-			System.out.println(url);
+			List<WebElement> tmps = element.findElements(By.xpath("./a"));
+			String url = "";
+			String titulo = "";
+			for (WebElement tmp : tmps) {
+				url = tmp.getAttribute("href");
+				titulo = tmp.findElement(By.xpath("..//h3")).getText();
+			}
+			String strAmenidades = "";
+			List<WebElement> amenidades = element.findElements(By.xpath("./div[@class='property-amenities']"));
+			for (WebElement tmp : amenidades) {
+				strAmenidades += tmp.getText();
+			}
+			strAmenidades = strAmenidades.replace('\n', '\t');
+			/*
+			 * tmp = tmp.findElement(By.xpath("./h3")); String titulo = tmp.getText();
+			 */
+			System.out.println(titulo + "\t" + strAmenidades + "\t" + url);
 		}
 	}
 	
