@@ -30,15 +30,20 @@ public class Main {
 
 		closeModalPopUp(driver);
 		whait();
-		readElements(driver);
+
+		int acc = 0;
 		
-		/*
-		 * goToNextPage(driver); whait(); readElements(driver);
-		 */		
+		boolean continueCrawling = true;
+		while (continueCrawling) {
+			readElements(driver);
+			goToNextPage(driver); whait();
+			acc++;
+		}
+		System.out.println(acc + " pages processed.");
 		driver.quit();
 	}
 
-	private static void goToNextPage(WebDriver driver) {
+	private static boolean goToNextPage(WebDriver driver) {
 		List<WebElement> elements = driver.findElements(By.xpath("//ul[@class='pagination']/li/a"));
 		boolean findedActive = false;
 		for (WebElement element : elements) {
@@ -48,10 +53,11 @@ public class Main {
 			else{
 				if(findedActive) {
 					element.click();
-					return;
+					return true;
 				}
 			}
 		}
+		return false; // it's the lest element. Sorry, the crawling is over. :)
 	}
 	
 	private static void whait() {
@@ -79,22 +85,36 @@ public class Main {
 
 		for (WebElement element : elements) {
 			List<WebElement> tmps = element.findElements(By.xpath("./a"));
-			String url = "";
-			String titulo = "";
+			Unit unit = new Unit();
 			for (WebElement tmp : tmps) {
-				url = tmp.getAttribute("href");
-				titulo = tmp.findElement(By.xpath("..//h3")).getText();
+				unit.url = tmp.getAttribute("href");
+				unit.title = tmp.findElement(By.xpath("..//h3")).getText();
 			}
-			String strAmenidades = "";
-			List<WebElement> amenidades = element.findElements(By.xpath("./div[@class='property-amenities']"));
-			for (WebElement tmp : amenidades) {
-				strAmenidades += tmp.getText();
+			List<WebElement> amenities = element.findElements(By.xpath("./div[@class='property-amenities']"));
+			for (WebElement tmp : amenities) {
+				String strAmenity = tmp.getText().replace('\n', '\t');
+				unit.amenities.add(strAmenity);
 			}
-			strAmenidades = strAmenidades.replace('\n', '\t');
-			/*
-			 * tmp = tmp.findElement(By.xpath("./h3")); String titulo = tmp.getText();
-			 */
-			System.out.println(titulo + "\t" + strAmenidades + "\t" + url);
+
+			WebElement costs = element.findElement(By.xpath(".//div[@id='valores-grid']/div[@class='div-valores']"));
+			String status = costs.findElement(By.xpath("..//span[@class='thumb-status']")).getText();
+			unit.costs.add(status);
+
+			String itemPrice = "";
+			try {
+				itemPrice = costs.findElement(By.xpath("..//span[@class='thumb-price']")).getText();
+			} catch (Exception e) {
+				itemPrice = "no price";
+			}
+			unit.costs.add(itemPrice);
+			
+			List<WebElement> otherCosts = costs.findElements(By.xpath("./..//div[@class='div-cond-iptu']/span"));
+			for (WebElement tmp : otherCosts) {
+				String cost = tmp.getText();
+				unit.costs.add(cost);
+			}
+			
+			System.out.println(unit);
 		}
 	}
 	
