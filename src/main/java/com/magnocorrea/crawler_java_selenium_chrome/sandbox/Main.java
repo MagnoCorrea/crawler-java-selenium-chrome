@@ -1,5 +1,6 @@
 package com.magnocorrea.crawler_java_selenium_chrome.sandbox;
 
+import java.util.Date;
 import java.util.List;
 
 import org.openqa.selenium.By;
@@ -7,6 +8,9 @@ import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+
+import net.htmlparser.jericho.Element;
+import net.htmlparser.jericho.Source;
 
 /**
  * A simple main to be an great sandbox! :)
@@ -35,9 +39,13 @@ public class Main {
 		
 		boolean continueCrawling = true;
 		while (continueCrawling) {
+			long ini = (new Date()).getTime();
 			readElements(driver);
+			long fim = (new Date()).getTime();
+			System.err.println("Delta: " + (fim - ini));
 			goToNextPage(driver); whait();
 			acc++;
+			continueCrawling = false;
 		}
 		System.out.println(acc + " pages processed.");
 		driver.quit();
@@ -75,11 +83,36 @@ public class Main {
 		
 	}
 
-	private static void readElementsPage(WebDriver driver) {
-		String in = driver.getPageSource();
-		System.out.println(in);
-	}
 	private static void readElements(WebDriver driver) {
+		String htmlText = driver.getPageSource();
+		Source source = new Source(htmlText);
+		List<Element> elements = source.getAllElementsByClass("limited-block-info");
+		for (Element element : elements) {
+			Unit unit = new Unit();
+			Element tituloAnuncio = element.getFirstElementByClass("titulo-anuncio");
+			List<Element> tituloAnuncioChilds = tituloAnuncio.getChildElements();
+			unit.url = tituloAnuncioChilds.get(0).getAttributeValue("href");
+			unit.title = tituloAnuncioChilds.get(0).getTextExtractor().toString();
+			unit.address = (tituloAnuncioChilds.size()>1?tituloAnuncioChilds.get(1).getTextExtractor().toString():"");
+			List<Element> amenities = element.getFirstElementByClass("property-amenities").getChildElements();
+			for (Element tmp : amenities) {
+				String strAmenity = tmp.getTextExtractor().toString().replace('\n', '\t');
+				unit.amenities.add(strAmenity);
+			}
+			unit.costs.add(element.getFirstElementByClass("thumb-price").getTextExtractor().toString());
+			Element elementDivCondIptu = element.getFirstElement("id","div-cond-iptu",true);
+			if(elementDivCondIptu != null) {
+				List<Element> otherCosts = element.getFirstElement("id","div-cond-iptu",true).getChildElements();
+				for (Element tmp : otherCosts) {
+					String cost = tmp.getTextExtractor().toString().replace('\n', '\t');
+					unit.costs.add(cost);
+				}
+			}
+			System.out.println(unit);
+		}
+
+	}
+	private static void readElementsSelenium(WebDriver driver) {
 //		List<WebElement> elements = driver.findElements(By.xpath("//div[@class='col-xs-12 grid-imovel']/div/a"));
 		List<WebElement> elements = driver.findElements(By.xpath("//div[@class='limited-block-info']"));
 
